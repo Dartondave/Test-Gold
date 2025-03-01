@@ -1,4 +1,4 @@
-name: Python Selenium Automation
+name: Run Selenium Script with Headless Chrome
 
 on:
   push:
@@ -7,36 +7,38 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
-  run-selenium-script:
+  selenium-job:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
+        python-version: '3.9'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install selenium
-
-    - name: Set up ChromeDriver
-      uses: nanasess/setup-chromedriver@v1
-      with:
-        chrome-version: 'latest' # Ensure the latest ChromeDriver is used
-
-    - name: Set up Google Chrome
-      uses: browser-actions/setup-chrome@v1
-      with:
-        chrome-version: 'latest'
+        pip install -r requirements.txt
+        sudo apt-get update
+        sudo apt-get install -y wget curl unzip
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb
+        sudo apt-get install -f
+        CHROME_DRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        wget https://chromedriver.storage.googleapis.com/$CHROME_DRIVER_VERSION/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/
+        sudo chown root:root /usr/local/bin/chromedriver
+        sudo chmod +x /usr/local/bin/chromedriver
 
     - name: Run Selenium script
       run: |
-        python main.py  # Replace 'your_script.py' with the actual name of your Python file
+        export DISPLAY=:99
+        nohup Xvfb :99 -ac -screen 0 1280x1024x24 &
+        python main.py
